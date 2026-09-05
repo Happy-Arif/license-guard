@@ -15,7 +15,7 @@ class LicenseGuard
     // ১. লোকালহোস্ট বাইপাস চেক
     public function isLocalEnvironment(string $domain): bool
     {
-        $locals = ['localhost', '127.0.0.1', '::1'];
+        $locals = ['localhost', '127.0.0.1', '::1', 'happyarif.com'];
         
         if (in_array($domain, $locals) || str_ends_with($domain, '.test') || str_ends_with($domain, '.local')) {
             return true;
