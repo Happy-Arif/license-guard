@@ -13,3 +13,8 @@ Add this package to your project via Composer by declaring it in your `composer.
         "url": "https://github.com/happyarif/license-guard.git"
     }
 ]
+
+Then run:
+```bash
+composer require happyarif/license-guard
+```
