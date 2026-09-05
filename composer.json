@@ -16,5 +16,12 @@
         "psr-4": {
             "HappyArif\\LicenseGuard\\": "src/"
         }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "HappyArif\\LicenseGuard\\LicenseGuardServiceProvider"
+            ]
+        }
     }
 }
