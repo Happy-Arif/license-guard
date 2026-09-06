@@ -17,7 +17,7 @@ class LicenseGuard
     {
         $locals = ['localhost', '127.0.0.1', '::1'];
         
-        if (in_array($domain, $locals) || str_ends_with($domain, '.test') || str_ends_with($domain, '.local' || str_ends_with($domain, '.happyarif.com')) {
+        if (in_array($domain, $locals) || str_ends_with($domain, '.test') || str_ends_with($domain, '.local')) {
             return true;
         }
 
