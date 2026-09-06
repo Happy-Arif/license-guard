@@ -11,7 +11,13 @@ class LaravelMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        $domain = $request->getHost();
+        $rawDomain = $request->getHost();
+        $domain = preg_replace('/^www\./', '', $rawDomain);
+        
+        if (filter_var($rawDomain, FILTER_VALIDATE_IP)) {
+            abort(403, 'Direct IP access is not allowed.');
+        }
+        
         $guard = new LicenseGuard(storage_path('app/.license_secure.json'));
 
         if ($guard->isLocalEnvironment($domain)) {
@@ -35,7 +41,12 @@ class LaravelMiddleware
 
         if (!$isValid) {
             Cache::forget('license_validity_' . $domain);
-            $guard->clearActivation();
+            
+            if (!filter_var($rawDomain, FILTER_VALIDATE_IP)) {
+                Cache::forget('is_activated');
+                Cache::forget('license_token');
+                $guard->clearActivation();
+            }
             
             $callbackUrl = urlencode(url('/'));
             return redirect()->away("https://app.happyarif.com/license-activation?domain={$domain}&callback={$callbackUrl}");
