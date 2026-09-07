@@ -10,7 +10,7 @@ Add this package to your project via Composer by declaring it in your `composer.
 "repositories": [
     {
         "type": "vcs",
-        "url": "https://github.com/happyarif/license-guard.git"
+        "url": "https://github.com/Happy-Arif/license-guard.git"
     }
 ]
 ```
