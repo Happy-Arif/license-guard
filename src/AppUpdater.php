@@ -85,6 +85,24 @@ class AppUpdater
             throw new Exception("Update files extracted, but failed to install new composer dependencies. Please check server logs.");
         }
 
+        $latestVersionInfo = $this->checkUpdate(env('APP_VERSION', '1.0.0'));
+
+        if (isset($latestVersionInfo['latest_version'])) {
+            $envPath = base_path('.env');
+            if (file_exists($envPath)) {
+                $envContent = file_get_contents($envPath);
+                $newVersion = $latestVersionInfo['latest_version'];
+                
+                // .env ফাইলে APP_VERSION রিপ্লেস বা যুক্ত করা
+                if (preg_match('/^APP_VERSION=/m', $envContent)) {
+                    $envContent = preg_replace('/^APP_VERSION=.*$/m', 'APP_VERSION=' . $newVersion, $envContent);
+                } else {
+                    $envContent .= "\nAPP_VERSION=" . $newVersion;
+                }
+                file_put_contents($envPath, $envContent);
+            }
+        }
+
         // ৪. ডাটাবেস আপডেট ও ক্যাশ ক্লিয়ার করা
         Artisan::call('migrate', ['--force' => true]);
         Artisan::call('optimize:clear');
