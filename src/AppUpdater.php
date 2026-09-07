@@ -67,6 +67,7 @@ class AppUpdater
         // ৩. নতুন ডিপেনডেন্সি ইন্সটল করা (Composer)
         $process = new Process(['composer', 'install', '--no-dev', '--optimize-autoloader']);
         $process->setWorkingDirectory(base_path());
+        $process->setEnv(['COMPOSER_HOME' => storage_path('app')]);
         $process->setTimeout(300); // বড় প্যাকেজ থাকলে যেন টাইমআউট না হয়
         $process->run();
 
