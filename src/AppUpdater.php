@@ -64,6 +64,14 @@ class AppUpdater
             throw new Exception("Failed to extract update package.");
         }
 
+        $cacheFiles = ['packages.php', 'services.php', 'config.php', 'events.php', 'routes.php'];
+        foreach ($cacheFiles as $file) {
+            $filePath = base_path('bootstrap/cache/' . $file);
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+        }
+
         // ৩. নতুন ডিপেনডেন্সি ইন্সটল করা (Composer)
         $process = new Process(['composer', 'install', '--no-dev', '--optimize-autoloader']);
         $process->setWorkingDirectory(base_path());
