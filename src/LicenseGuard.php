@@ -9,10 +9,16 @@ class LicenseGuard
 
     public function __construct(?string $customStoragePath = null)
     {
-        $this->storagePath = $customStoragePath ?? sys_get_temp_dir() . '/.happyarif_license.json';
+        // $this->storagePath = $customStoragePath ?? sys_get_temp_dir() . '/.happyarif_license.json';
+        if ($customStoragePath) {
+            $this->storagePath = $customStoragePath;
+        } elseif (function_exists('storage_path')) {
+            $this->storagePath = storage_path('app/.happyarif_license.json');
+        } else {
+            $this->storagePath = __DIR__ . '/.happyarif_license.json';
+        }
     }
 
-    // ১. লোকালহোস্ট বাইপাস চেক
     public function isLocalEnvironment(string $domain): bool
     {
         $locals = ['localhost', '127.0.0.1', '::1'];
@@ -80,11 +86,15 @@ class LicenseGuard
                 'Content-Type: application/json',
                 'Accept: application/json'
             ]);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
+
+            if ($response === false || $httpCode >= 500 || $httpCode === 0) {
+                return true; 
+            }
 
             if ($httpCode === 200) {
                 $result = json_decode($response, true);

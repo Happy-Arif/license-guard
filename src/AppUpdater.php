@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\Process\Process; // এটি নতুন যুক্ত হয়েছে
+use Symfony\Component\Process\Process;
 use ZipArchive;
 use Exception;
 
@@ -17,7 +17,7 @@ class AppUpdater
 
     public function __construct()
     {
-        $this->guard = new LicenseGuard(storage_path('app/.license_secure.json'));
+        $this->guard = new LicenseGuard(storage_path('app/.happyarif_license.json'));
     }
 
     public function checkUpdate(string $currentVersion)

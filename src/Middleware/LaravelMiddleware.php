@@ -18,7 +18,7 @@ class LaravelMiddleware
             abort(403, 'Direct IP access is not allowed.');
         }
         
-        $guard = new LicenseGuard(storage_path('app/.license_secure.json'));
+        $guard = new LicenseGuard(storage_path('app/.happyarif_license.json'));
 
         if ($guard->isLocalEnvironment($domain)) {
             return $next($request);
