@@ -82,10 +82,13 @@ class LicenseGuard
                 'domain_name' => $domain,
                 'token' => $token
             ]));
+            
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
                 'Accept: application/json'
             ]);
+
+            curl_setopt($ch, CURLOPT_USERAGENT, 'HappyArif-LicenseGuard/1.0');
             curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
             $response = curl_exec($ch);
