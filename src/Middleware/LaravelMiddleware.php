@@ -12,46 +12,68 @@ class LaravelMiddleware
     public function handle(Request $request, Closure $next)
     {
         $rawDomain = $request->getHost();
-        $domain = preg_replace('/^www\./', '', $rawDomain);
-        
-        if (filter_var($rawDomain, FILTER_VALIDATE_IP)) {
-            abort(403, 'Direct IP access is not allowed.');
-        }
-        
-        $guard = new LicenseGuard(storage_path('app/.happyarif_license.json'));
+        $domain = preg_replace('/^www\./i', '', $rawDomain);
 
+        $guard = new LicenseGuard();
+
+        // Allow 127.0.0.1 and ::1 in development before blocking public IPs.
         if ($guard->isLocalEnvironment($domain)) {
             return $next($request);
         }
 
-        if ($request->has('token')) {
-            $guard->saveActivation($request->token);
-            
-            return redirect()->to($request->url());
+        if (filter_var($rawDomain, FILTER_VALIDATE_IP)) {
+            abort(403, 'Direct IP access is not allowed.');
         }
 
-        if (!$guard->isActivated() || !$guard->getToken()) {
-            $callbackUrl = urlencode(url('/')); 
-            return redirect()->away("https://app.happyarif.com/license-activation?domain={$domain}&callback={$callbackUrl}");
-        }
-
-        $isValid = Cache::remember('license_validity_' . $domain, 86400, function () use ($guard, $domain) {
-            return $guard->validateWithServer($domain, $guard->getToken());
-        });
-
-        if (!$isValid) {
-            Cache::forget('license_validity_' . $domain);
-            
-            if (!filter_var($rawDomain, FILTER_VALIDATE_IP)) {
-                Cache::forget('is_activated');
-                Cache::forget('license_token');
-                $guard->clearActivation();
+        // Activation callback: never overwrite a legitimate license with an
+        // arbitrary ?token unless the central server explicitly accepts it.
+        $callbackToken = $request->query('token');
+        if (is_string($callbackToken) && $callbackToken !== '') {
+            $status = $guard->verificationStatus($domain, $callbackToken);
+            if ($status === 'valid') {
+                $guard->saveActivation($callbackToken);
+                return redirect()->to($request->url());
             }
-            
-            $callbackUrl = urlencode(url('/'));
-            return redirect()->away("https://app.happyarif.com/license-activation?domain={$domain}&callback={$callbackUrl}");
+
+            abort($status === 'unavailable' ? 503 : 422,
+                'License activation could not be verified. Your previous license has not been changed.');
         }
 
+        $token = $guard->getToken();
+        if (!$guard->isActivated() || !$token) {
+            return $this->redirectToActivation($domain);
+        }
+
+        // Different tokens/domains cannot accidentally share a cached result.
+        $cacheKey = 'happyarif_license_status_' . hash('sha256', $domain . '|' . $token);
+        $status = Cache::get($cacheKey);
+
+        if (!in_array($status, ['valid', 'invalid', 'unavailable'], true)) {
+            $status = $guard->verificationStatus($domain, $token);
+
+            // Avoid keeping a transient failure or rejection cached for 24h.
+            Cache::put($cacheKey, $status, $status === 'valid' ? 86400 : 300);
+            if ($status === 'valid') {
+                $guard->markVerified();
+            }
+        }
+
+        if ($status === 'invalid') {
+            // Do not delete persisted credentials on a remote rejection.
+            // A recovered/re-enabled license will work after the short TTL.
+            return $this->redirectToActivation($domain);
+        }
+
+        // Existing activated installations stay usable during API outages.
+        // Fresh installations MUST still pass the callback verification above.
         return $next($request);
+    }
+
+    private function redirectToActivation(string $domain)
+    {
+        return redirect()->away('https://app.happyarif.com/license-activation?' . http_build_query([
+            'domain' => $domain,
+            'callback' => url('/'),
+        ]));
     }
 }
